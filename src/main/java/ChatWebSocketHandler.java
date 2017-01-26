@@ -3,27 +3,188 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+
 @WebSocket
 public class ChatWebSocketHandler {
 
     private String sender, msg;
+    private ChatContainer chatContainer = new ChatContainer();
+
+    private HashMap<String, String> whereToSend = new HashMap<>();
 
     @OnWebSocketConnect
     public void onConnect(Session user) throws Exception {
-        System.out.println("Bum");
 
     }
-
     @OnWebSocketClose
-    public void onClose(Session user, int statusCode, String reason) {
-        String username = Chat.userUsernameMap.get(user);
-        Chat.userUsernameMap.remove(user);
-        Chat.broadcastMessage(sender = "Server", msg = (username + " left the chat"));
+    public void onClose(Session user, int statusCode, String reason) throws JSONException {
+        User userWhoLeft = chatContainer.getUserBySession(user);
+        Room room = chatContainer.getCurrentUserRoom(userWhoLeft);
+        if (room != null){
+            String status = chatContainer.deleteUserFromRoom(user, room.getRoomName());
+            chatContainer.deleteUserFromChat(userWhoLeft);
+            if(whereToSend.get(status).equals("b"))
+                sendToBroadcast(status, room.getRoomName(), userWhoLeft.getUserName(), "");
+        }
     }
 
     @OnWebSocketMessage
-    public void onMessage(Session user, String message) {
-        Chat.broadcastMessage(sender = Chat.userUsernameMap.get(user), msg = message);
+    public void onMessage(Session session, String message) {
+        try {
+            parseJSON(session, message);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
+
+    private void parseJSON(Session session, String message) throws JSONException, IOException {
+        JSONObject jsonObject = new JSONObject(message);
+        String typeOfJson = jsonObject.getString("type");
+        String messageFromJson = jsonObject.getString("message");
+
+        String typeOfMessage = "";
+        String roomName = "global";
+        String userName = "";
+
+        generateSendingMap();
+
+        switch (typeOfJson){
+            case "newUser": typeOfMessage = chatContainer.pushUser(messageFromJson, session);
+            break;
+            case "newRoom": typeOfMessage = chatContainer.pushRoom(messageFromJson);
+            break;
+            case "getRoomList": typeOfMessage = "get_room_list"; break;
+            case "joinRoom":
+                roomName = messageFromJson;
+                typeOfMessage = chatContainer.pushUserToRoom(session, roomName);
+                userName = chatContainer.getUserBySession(session).getUserName();
+                break;
+            case "leaveRoom":
+                roomName = messageFromJson;
+                userName = chatContainer.getUserBySession(session).getUserName();
+                typeOfMessage = chatContainer.deleteUserFromRoom(session, roomName);
+                break;
+            case "message":
+                roomName = jsonObject.getString("room");
+                userName = chatContainer.getUserBySession(session).getUserName();
+                message = messageFromJson;
+                typeOfMessage = typeOfJson;
+        }
+
+        if(whereToSend.get(typeOfMessage).equals("b")){
+            sendToBroadcast(typeOfMessage, roomName, userName, message);
+        }
+        else{
+            sendToUser(typeOfMessage, session);
+        }
+        if (roomName.equals("ChatBot") && typeOfJson.equals("message")){
+            String botAnswer = chatContainer.generateAnswerFromChatBot(message);
+            sendToBroadcast(typeOfMessage, roomName, "ChatBot", botAnswer);
+        }
+        if (roomName.equals("ChatBot") && typeOfJson.equals("joinRoom")){
+            String botAnswer = chatContainer.generateAnswerFromChatBot("");
+            sendToBroadcast("message", roomName, "ChatBot", botAnswer);
+        }
+
+    }
+
+    private void sendToUser(String message, Session session) throws JSONException, IOException {
+        JSONObject messageObject = null;
+        switch(message) {
+            case "username_unavailable":
+            case "room_name_unavailable":
+            case "no_such_user_in_room":
+                messageObject = new JSONObject().put("error", message);
+                break;
+            case "user_added": messageObject = generateRoomList(); break;
+            case "get_room_list": messageObject = generateRoomList(); break;
+        }
+        messageObject.put("type", message);
+        session.getRemote().sendString(String.valueOf(messageObject));
+    }
+
+    private void sendToBroadcast(String typeOfMessage, String roomName, String userName, String message) throws JSONException {
+        JSONObject messageObject = null;
+
+        String messageToShow = "";
+        String sender = "";
+
+        switch(typeOfMessage){
+            case "room_added": messageObject = generateRoomList(); break;
+            case "delete_user_from_chat":
+                messageObject = generateUserList(roomName);
+                break;
+            case "user_added_to_room":
+                messageObject = generateUserList(roomName);
+                messageToShow =  userName + " join to the room.";
+                sender = "server";
+                break;
+            case "user_deleted_from_room":
+                messageObject = generateUserList(roomName);
+                messageToShow = userName + " left the room";
+                sender = "server";
+                break;
+            case "message":
+                messageObject = generateUserList(roomName);
+                messageToShow = message;
+                sender = userName;
+        }
+        if (messageObject != null){
+            messageObject.put("type", typeOfMessage);
+            chatContainer.sendMessegeToEveryUserInRoom(roomName, sender, messageObject, messageToShow);
+        }
+
+    }
+
+    private JSONObject generateUserList(String roomName) throws JSONException {
+        JSONObject messageObject = new JSONObject().put("users", generateUserNameList(roomName));
+        return messageObject;
+    }
+
+    private JSONObject generateRoomList() throws JSONException {
+        JSONObject messageObject = new JSONObject().put("rooms", generateRoomNameList());
+        return messageObject;
+    }
+
+    private ArrayList<String> generateRoomNameList() {
+        ArrayList<String> roomNameList = new ArrayList<>();
+        for (Room r: chatContainer.getRoomList()) {
+            roomNameList.add(r.getRoomName());
+
+        }
+        return roomNameList;
+    }
+    private ArrayList<String> generateUserNameList(String roomName) {
+        ArrayList<String> userNameList = new ArrayList<>();
+        ArrayList<User> userList = chatContainer.getRoomByName(roomName).getUserList();
+
+        for (User u: userList ) {
+            userNameList.add(u.getUserName());
+        }
+        return userNameList;
+    }
+
+    private void generateSendingMap() {
+        whereToSend.put( "room_name_unavailable", "s");
+        whereToSend.put( "room_added", "b");
+        whereToSend.put( "username_unavailable", "s");
+        whereToSend.put( "user_added", "s");
+        whereToSend.put( "no_such_user_in_room", "s");
+        whereToSend.put( "get_room_list", "s");
+        whereToSend.put( "user_added_to_room", "b");
+        whereToSend.put( "user_deleted_from_room", "b");
+        whereToSend.put( "message", "b");
+    }
+
+
 
 }

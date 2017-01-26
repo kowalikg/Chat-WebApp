@@ -1,82 +1,135 @@
 import org.eclipse.jetty.websocket.api.Session;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+
+import static j2html.TagCreator.*;
 
 /**
  * Created by Gabrysia on 22.01.2017.
  */
 public class ChatContainer {
 
-    /*
-    Ta klasa zajmuje się wszystkim co dotyczy agregacji:
-    - użytkowników w czacie
-    - kanałów w czacie
-    - użytkowników w kanale
-     */
-
-
     //lista użytkowników
-    private ArrayList<User> userList = new ArrayList<>();
+    private ArrayList<User> chatUserList = new ArrayList<>();
     //lista pokoi
     private ArrayList<Room> roomList = new ArrayList<>();
 
-    private int lastUserID = 1;
-    private int lastRoomID = 1;
-
+    public ChatContainer(){
+        roomList.add(new ChatBot());
+    }
     //dodawanie pokoju do listy
-    public void pushRoom (String roomName) throws IllegalArgumentException{
-        if (roomListContains(roomName))
-            throw new IllegalArgumentException("There is a room with this name");
-        Room room = new Room(lastRoomID++, roomName);
+    public String pushRoom (String roomName){
+        if (roomListContains(roomName)){
+            return "room_name_unavailable";
+        }
+        Room room = new Room(roomName);
         roomList.add(room);
+        return "room_added";
     }
     //dodawanie użytkownika do listy
-    public void pushUser (String userName, Session session) throws IllegalArgumentException{
+    public String pushUser (String userName, Session session){
         if (userListContains(userName))
-            throw new IllegalArgumentException("There is a user with this name");
-        User user = new User(lastUserID++, userName, session);
-        userList.add(user);
+            return "username_unavailable";
+        User user = new User(userName, session);
+        chatUserList.add(user);
+        return "user_added";
     }
     //dodawanie użytkownika do pokoju
-    public void pushUserToRoom(Session session, String roomName) throws NegativeArraySizeException{
+    public String pushUserToRoom(Session session, String roomName){
         User user = getUserBySession(session);
         Room room = getRoomByName(roomName);
+
         room.pushUser(user);
+        return "user_added_to_room";
     }
     //usuwanie użytkownika z pokoju
-    public void deleteUserFromRoom(Session session, String roomName) throws IllegalArgumentException{
+    public String deleteUserFromRoom(Session session, String roomName){
         User user = getUserBySession(session);
         Room room = getRoomByName(roomName);
         if (room.getUserList().contains(user)){
             room.deleteUser(user);
+            return "user_deleted_from_room";
         }
-        throw new IllegalArgumentException("There is no such user in this channel.");
+        return "no_such_user_in_room";
     }
-
-    private User getUserBySession(Session session) throws IllegalArgumentException {
-        for (User u: userList) {
+    //usuwanie użytkownika z chatu
+    public void deleteUserFromChat(User user){
+        chatUserList.remove(user);
+    }
+    //pozyskiwanie użytkownika przez sesję
+    public User getUserBySession(Session session) throws IllegalArgumentException {
+        for (User u: chatUserList) {
             if (u.getUserSession().equals(session))
                 return u;
         }
         throw new IllegalArgumentException("No user connected to this session");
     }
-
-    private Room getRoomByName(String roomName){
-        for (Room r: roomList){
+    //pozyskiwanie pokoju przez jego imię
+    public Room getRoomByName(String roomName) {
+        for (Room r : roomList) {
             if (r.getRoomName().equals(roomName))
                 return r;
         }
         return null;
     }
+    //pozyskiwanie pokoju w którym jest użytkownik
+    public Room getCurrentUserRoom(User user){
+        for (Room r: roomList){
+            if(r.containsUser(user) != null)
+                return r;
+        }
+        return null;
+    }
+    // generowanie odpowiedzi od chatbota
+    public String generateAnswerFromChatBot(String message) throws IOException, JSONException {
+        String chatBotAnswer =  ((ChatBot) roomList.get(0)).generateAnswer(message);
+        return chatBotAnswer;
+    }
+    //generowanie HTMLa
+    private String createHtmlMessageFromSender(String sender, String message) {
+        return article().with(
+                b(sender + " says:" ),
+                p(message),
+                span().withClass("timestamp").withText(new SimpleDateFormat("HH:mm:ss").format(new Date()))
+        ).render();
+    }
+    //wysyłanie wiadomości wszystkim użytkownikom w pokoju
+    public void sendMessegeToEveryUserInRoom(String roomName, String sender, JSONObject message, String messageToShow){
+        Set<Session> userSet;
+        if(roomName.equals("global")){
+            userSet = generateSessionList();
+        }
+        else{
+            Room room = getRoomByName(roomName);
+            userSet = generateSessionList(room);
+        }
+        userSet.stream().filter(Session::isOpen).forEach(session -> {
+            try {
+                session.getRemote().sendString(String.valueOf(message.put("sender", sender).put("message", createHtmlMessageFromSender(sender, messageToShow))));
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
 
+        });
+    }
+    //sprawdzanie czy jest taki użytkownik
     private boolean userListContains(String userName) {
-        for (User u: userList){
+        for (User u: chatUserList){
             if(u.getUserName().equals(userName))
                 return true;
         }
         return false;
     }
-
+    //sprawdzanie czy jest taki pokój
     private boolean roomListContains(String roomName){
         for (Room r: roomList) {
             if(r.getRoomName().equals(roomName))
@@ -84,7 +137,25 @@ public class ChatContainer {
         }
         return false;
     }
-    public ArrayList getRoomList(){ return roomList; }
-    public ArrayList getUserList(){ return userList; }
+    //generowanie zbioru sesji użytkowników z pokoju
+    private Set generateSessionList(Room room) {
+        ArrayList<User> userRoomList = room.getUserList();
+        HashSet<Session> userSessions = new HashSet<>();
+        for (User u: userRoomList) {
+            userSessions.add(u.getUserSession());
+        }
+        return userSessions;
 
+    }
+    //generowanie zbioru sesji wszystkich użytkowników
+    private Set generateSessionList() {
+        HashSet<Session> userSessions = new HashSet<>();
+        for (User u: chatUserList) {
+            userSessions.add(u.getUserSession());
+        }
+        return userSessions;
+
+    }
+
+    public ArrayList<Room> getRoomList(){ return roomList; }
 }

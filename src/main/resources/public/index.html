@@ -8,32 +8,20 @@
 </head>
 
 <body>
-
-<h1 id = "welcome">Welcome guest!</script></h1>
+<h1 id = "welcome">Welcome guest!</h1>
 <p id = 'name_title'>Write your name:</p>
+<p id = 'user_name_error' hidden = true>Selected name is not available. Please write another:</p>
 <input id = 'input_name' placeholder="Name">
-<button id ="name_button" onclick="saveName()">Save</button>
-<h1 id = 'chatListTitle'></h1>
+<button id ="name_button">Save</button>
+<h2 id = 'chatListTitle'></h2>
+<p id = 'room_name_error' hidden = true>Selected room name is not available. Please write another:</p>
 <input id = 'newRoomInput' placeholder="New room's name" hidden = true>
 <button id ="addNewChatButton" hidden = true>New room</button>
-<ul id="roomlist"></ul>
-<ul id="userlist"> <!-- Built by JS --> </ul>
-<div id="chat">    <!-- Built by JS --> </div>
-<script>
-    function saveName (){
-    document.getElementById('welcome').innerHTML = 'Welcome '
-    + document.getElementById('input_name').value + '!';
-    document.getElementById('input_name').disbaled = true;
-    document.getElementById('input_name').disabled = true;
-    document.getElementById('chatListTitle').innerHTML = 'Here are available rooms:';
-    document.getElementById('newRoomInput').hidden = false;
-    document.getElementById('addNewChatButton').hidden = false;
-	
-	var webSocket = new WebSocket("ws://" + location.hostname + ":" + location.port + "/chat/");
-	webSocket.onmessage = function (msg) { updateChat(msg); };
-	webSocket.onclose = function () { alert("WebSocket connection closed") };
+<ul id="room_list" hidden = true></ul>
+<ul id="user_list" hidden = true></ul>
+<div id="messageDiv"></div>
+<div id="chat" hidden = true></div>
+<script src="script.js"></script>
 
-    }
-</script>
 </body>
 </html>

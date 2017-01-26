@@ -14,6 +14,10 @@ body {
     padding: 20px
 }
 
+.error{
+	color: red;
+}
+
 input {
     width: 100%;
     padding: 5px;
@@ -33,7 +37,7 @@ li {
     margin: 0 0 5px 0
 }
 
-#userlist {
+#user_list {
     position: fixed;
     left: 50%;
     list-style: none;
@@ -43,17 +47,14 @@ li {
     width: 150px;
     top: 11px;
 }
-#roomlist {
-	position: fixed;
-    left: 50%;
+#room_list {
+    background: #FACEE6;
+	position: relative;
     list-style: none;
-    margin-left: 250px;
-    background: #f0f0f9;
+    width: 440px;
     padding: 5px 10px;
-    width: 150px;
     top: 11px;
 }
-
 
 #chat p {
     margin: 5px 0;
@@ -71,6 +72,7 @@ li {
     background: #f1f1f1;
     padding: 10px;
     margin: 10px 0;
+    margin-top: 25px;
     border-left: 5px solid #aaa;
     position: relative;
     word-wrap: break-word;

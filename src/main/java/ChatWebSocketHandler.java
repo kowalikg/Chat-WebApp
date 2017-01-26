@@ -7,7 +7,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 @WebSocket
@@ -98,6 +97,7 @@ public class ChatWebSocketHandler {
     }
 
     private void sendToUser(String message, Session session) throws JSONException, IOException {
+        JSONGenerator generator = new JSONGenerator();
         JSONObject messageObject = null;
         switch(message) {
             case "username_unavailable":
@@ -105,36 +105,37 @@ public class ChatWebSocketHandler {
             case "no_such_user_in_room":
                 messageObject = new JSONObject().put("error", message);
                 break;
-            case "user_added": messageObject = generateRoomList(); break;
-            case "get_room_list": messageObject = generateRoomList(); break;
+            case "user_added":
+            case "get_room_list": messageObject = generator.generateRoomList(chatContainer.getRoomList()); break;
         }
         messageObject.put("type", message);
         session.getRemote().sendString(String.valueOf(messageObject));
     }
 
     private void sendToBroadcast(String typeOfMessage, String roomName, String userName, String message) throws JSONException {
+        JSONGenerator generator = new JSONGenerator();
         JSONObject messageObject = null;
 
         String messageToShow = "";
         String sender = "";
 
         switch(typeOfMessage){
-            case "room_added": messageObject = generateRoomList(); break;
+            case "room_added": messageObject = generator.generateRoomList(chatContainer.getRoomList()); break;
             case "delete_user_from_chat":
-                messageObject = generateUserList(roomName);
+                messageObject = generator.generateUserList(chatContainer.getRoomByName(roomName).getUserList());
                 break;
             case "user_added_to_room":
-                messageObject = generateUserList(roomName);
+                messageObject = generator.generateUserList(chatContainer.getRoomByName(roomName).getUserList());
                 messageToShow =  userName + " join to the room.";
                 sender = "server";
                 break;
             case "user_deleted_from_room":
-                messageObject = generateUserList(roomName);
+                messageObject = generator.generateUserList(chatContainer.getRoomByName(roomName).getUserList());
                 messageToShow = userName + " left the room";
                 sender = "server";
                 break;
             case "message":
-                messageObject = generateUserList(roomName);
+                messageObject = generator.generateUserList(chatContainer.getRoomByName(roomName).getUserList());
                 messageToShow = message;
                 sender = userName;
         }
@@ -143,34 +144,6 @@ public class ChatWebSocketHandler {
             chatContainer.sendMessegeToEveryUserInRoom(roomName, sender, messageObject, messageToShow);
         }
 
-    }
-
-    private JSONObject generateUserList(String roomName) throws JSONException {
-        JSONObject messageObject = new JSONObject().put("users", generateUserNameList(roomName));
-        return messageObject;
-    }
-
-    private JSONObject generateRoomList() throws JSONException {
-        JSONObject messageObject = new JSONObject().put("rooms", generateRoomNameList());
-        return messageObject;
-    }
-
-    private ArrayList<String> generateRoomNameList() {
-        ArrayList<String> roomNameList = new ArrayList<>();
-        for (Room r: chatContainer.getRoomList()) {
-            roomNameList.add(r.getRoomName());
-
-        }
-        return roomNameList;
-    }
-    private ArrayList<String> generateUserNameList(String roomName) {
-        ArrayList<String> userNameList = new ArrayList<>();
-        ArrayList<User> userList = chatContainer.getRoomByName(roomName).getUserList();
-
-        for (User u: userList ) {
-            userNameList.add(u.getUserName());
-        }
-        return userNameList;
     }
 
     private void generateSendingMap() {

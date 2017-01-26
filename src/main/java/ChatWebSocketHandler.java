@@ -22,16 +22,26 @@ public class ChatWebSocketHandler {
 
     }
     @OnWebSocketClose
-    public void onClose(Session user, int statusCode, String reason) throws JSONException {
-        User userWhoLeft = chatContainer.getUserBySession(user);
-        Room room = chatContainer.getCurrentUserRoom(userWhoLeft);
-        if (room != null){
-            String status = chatContainer.deleteUserFromRoom(user, room.getRoomName());
+    public void onClose(Session user, int statusCode, String reason) {
+        User userWhoLeft = null;
+        try{
+            userWhoLeft = chatContainer.getUserBySession(user);
+            Room room = chatContainer.getCurrentUserRoom(userWhoLeft);
+            if (room != null){
+                String status = chatContainer.deleteUserFromRoom(user, room.getRoomName());
+                chatContainer.deleteUserFromChat(userWhoLeft);
+                if(whereToSend.get(status).equals("b"))
+                     sendToBroadcast(status, room.getRoomName(), userWhoLeft.getUserName(), "");
+
+            }
             chatContainer.deleteUserFromChat(userWhoLeft);
-            if(whereToSend.get(status).equals("b"))
-                sendToBroadcast(status, room.getRoomName(), userWhoLeft.getUserName(), "");
         }
-        chatContainer.deleteUserFromChat(userWhoLeft);
+        catch (IllegalArgumentException e){
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @OnWebSocketMessage
@@ -43,9 +53,12 @@ public class ChatWebSocketHandler {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void parseJSON(Session session, String message) throws JSONException, IOException {
+    private void parseJSON(Session session, String message) throws JSONException, IOException, IllegalArgumentException {
         JSONObject jsonObject = new JSONObject(message);
         String typeOfJson = jsonObject.getString("type");
         String messageFromJson = jsonObject.getString("message");

@@ -32,6 +32,7 @@ public class ChatWebSocketHandler {
             if(whereToSend.get(status).equals("b"))
                 sendToBroadcast(status, room.getRoomName(), userWhoLeft.getUserName(), "");
         }
+        chatContainer.deleteUserFromChat(userWhoLeft);
     }
 
     @OnWebSocketMessage
@@ -43,7 +44,6 @@ public class ChatWebSocketHandler {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     private void parseJSON(Session session, String message) throws JSONException, IOException {
@@ -184,7 +184,5 @@ public class ChatWebSocketHandler {
         whereToSend.put( "user_deleted_from_room", "b");
         whereToSend.put( "message", "b");
     }
-
-
 
 }

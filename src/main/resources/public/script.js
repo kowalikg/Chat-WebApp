@@ -92,6 +92,7 @@ function showChatPanel(data){
 	document.getElementById('user_name_error').hidden = true;
 	document.getElementById('newRoomInput').hidden = false;
 	document.getElementById('addNewChatButton').hidden = false;
+	document.getElementById('chat').hidden = true;
 
 	refreshRoomList(data);
 }
@@ -99,6 +100,11 @@ function showChatPanel(data){
 function refreshRoomList(data){
     var rooms = data.rooms;
     number = rooms.length;
+
+    document.getElementById("room_list").innerHTML = "";
+    document.getElementById('user_list').hidden = true;
+    document.getElementById("chat").innerHTML = "";
+    document.getElementById('chat').hidden = true;
 
 	document.getElementById('room_name_error').hidden = true;
 	document.getElementById('room_list').hidden = false;

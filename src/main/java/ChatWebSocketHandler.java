@@ -23,25 +23,20 @@ public class ChatWebSocketHandler {
     }
     @OnWebSocketClose
     public void onClose(Session user, int statusCode, String reason) {
-        User userWhoLeft = null;
-        try{
-            userWhoLeft = chatContainer.getUserBySession(user);
-            Room room = chatContainer.getCurrentUserRoom(userWhoLeft);
+        User userWhoLeft = chatContainer.getUserBySession(user);
+        Room room = chatContainer.getCurrentUserRoom(userWhoLeft);
             if (room != null){
                 String status = chatContainer.deleteUserFromRoom(user, room.getRoomName());
                 chatContainer.deleteUserFromChat(userWhoLeft);
                 if(whereToSend.get(status).equals("b"))
-                     sendToBroadcast(status, room.getRoomName(), userWhoLeft.getUserName(), "");
+                    try {
+                        sendToBroadcast(status, room.getRoomName(), userWhoLeft.getUserName(), "");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
 
             }
             chatContainer.deleteUserFromChat(userWhoLeft);
-        }
-        catch (IllegalArgumentException e){
-            e.printStackTrace();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
     }
 
     @OnWebSocketMessage

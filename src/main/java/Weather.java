@@ -13,21 +13,31 @@ public class Weather {
     private String description;
     private String time;
     private Double temperature;
+    private String weatherDescription;
     public Weather() throws IOException, JSONException {
         generateWeather();
 
     }
     private void generateWeather() throws IOException, JSONException {
-        String url = "http://api.openweathermap.org/data/2.5/weather?q=Cracow&APPID=ac6159945d52f0c0a8ba3af4d536e052";
+        String url = "http://api.openweathermap.org/data/2.5/weather?q=Cracow&APPID=";
         Downloader downloader = new Downloader(url);
         downloader.download();
         String jsonResult = downloader.getJsonResult();
+
+        if (jsonResult.equals("error")){
+            weatherDescription = "No weather available.";
+            return;
+
+        }
         JSONObject jsonObject = new JSONObject(jsonResult);
-        description = jsonObject.getJSONArray("weather").getJSONObject(0).getString("description");
-        temperature = Double.parseDouble(jsonObject.getJSONObject("main").getString("temp")) - 273.15;
-        time = String.valueOf( new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime()) );
+
+         description = jsonObject.getJSONArray("weather").getJSONObject(0).getString("description");
+         temperature = Double.parseDouble(jsonObject.getJSONObject("main").getString("temp")) - 273.15;
+         time = String.valueOf(new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime()));
+         weatherDescription = "The weather in " + "Cracow: " + description + ", temperature: " + temperature + " C, at: " + time;
+
     }
     public String getWeather(){
-        return "Cracow: " + description + ", temperature: " + temperature + " C, at: " + time;
+        return weatherDescription;
     }
 }

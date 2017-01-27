@@ -24,7 +24,7 @@ public class ChatBot extends Room {
             case "day":
                 return "Today is " + String.valueOf( new SimpleDateFormat("EEEE", Locale.US).format(new Date()));
             case "weather":
-                return "The weather in " + new Weather().getWeather();
+                return new Weather().getWeather();
         }
         return "To get time write 'time'," +
                 " to get day of the week write 'day'," +

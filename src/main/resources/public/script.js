@@ -141,18 +141,18 @@ function hideRoomPanel(roomName){
 }
 
 function showMessagePanel(){
+    document.getElementById("messageDiv").innerHTML = "";
     insert("messageDiv", "<button id ='sendMessage'>Send</button>");
     insert("messageDiv", "<input id ='messageInput' placeholder = 'Write your message'></>");
     document.getElementById("sendMessage").addEventListener("click", function () {sendMessage();});
 }
 
 function deleteRoomInterface(){
+    document.getElementById("messageDiv").innerHTML = "";
     document.getElementById("room_list").innerHTML = "";
 	document.getElementById('user_list').hidden = true;
     document.getElementById("chat").innerHTML = "";
     document.getElementById('chat').hidden = true;
-    document.getElementById('messageInput').hidden = true;
-    document.getElementById('sendMessage').hidden = true;
 }
 
 function joinRoom(img){
@@ -173,6 +173,7 @@ function sendMessage(){
 function leaveRoom(button){
     var roomName = button.id;
     document.cookie = "roomName=global";
+    document.getElementById("messageDiv").innerHTML = "";
     deleteRoomInterface();
 
     webSocket.send(generateJSON("leaveRoom", roomName));

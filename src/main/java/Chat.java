@@ -4,7 +4,7 @@ public class Chat {
 
     public static void main(String[] args) {
         port(getHerokuAssignedPort());
-        staticFiles.location("/public"); //chatbot.html is served at localhost:4567 (default port)
+        staticFiles.location("/public");
         webSocket("/chat", ChatWebSocketHandler.class);
         init();
     }

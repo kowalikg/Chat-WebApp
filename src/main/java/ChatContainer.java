@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static j2html.TagCreator.*;
 
@@ -17,9 +18,9 @@ import static j2html.TagCreator.*;
 public class ChatContainer {
 
     //lista użytkowników
-    private ArrayList<User> chatUserList = new ArrayList<>();
+    private CopyOnWriteArrayList<User> chatUserList = new  CopyOnWriteArrayList<>();
     //lista pokoi
-    private ArrayList<Room> roomList = new ArrayList<>();
+    private CopyOnWriteArrayList<Room> roomList = new  CopyOnWriteArrayList<>();
 
     public ChatContainer(){
         roomList.add(new ChatBot());
@@ -139,7 +140,7 @@ public class ChatContainer {
     }
     //generowanie zbioru sesji użytkowników z pokoju
     private Set generateSessionList(Room room) {
-        ArrayList<User> userRoomList = room.getUserList();
+        CopyOnWriteArrayList<User> userRoomList = room.getUserList();
         HashSet<Session> userSessions = new HashSet<>();
         for (User u: userRoomList) {
             userSessions.add(u.getUserSession());
@@ -157,5 +158,5 @@ public class ChatContainer {
 
     }
 
-    public ArrayList<Room> getRoomList(){ return roomList; }
+    public  CopyOnWriteArrayList<Room> getRoomList(){ return roomList; }
 }

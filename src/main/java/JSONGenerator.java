@@ -2,6 +2,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by Gabrysia on 26.01.2017.
@@ -9,8 +10,8 @@ import java.util.ArrayList;
 public class JSONGenerator {
     private JSONObject jsonObject;
 
-    public JSONObject generateUserList(ArrayList<User> userList ) throws JSONException {
-        ArrayList<String> userNameList = new ArrayList<>();
+    public JSONObject generateUserList(CopyOnWriteArrayList<User> userList ) throws JSONException {
+        CopyOnWriteArrayList<String> userNameList = new  CopyOnWriteArrayList<>();
         for (User u: userList ) {
             userNameList.add(u.getUserName());
         }
@@ -18,8 +19,8 @@ public class JSONGenerator {
         return jsonObject;
     }
 
-    public JSONObject generateRoomList(ArrayList<Room> roomList) throws JSONException {
-        ArrayList<String> roomNameList = new ArrayList<>();
+    public JSONObject generateRoomList( CopyOnWriteArrayList<Room> roomList) throws JSONException {
+        CopyOnWriteArrayList<String> roomNameList = new  CopyOnWriteArrayList<>();
         for (Room r: roomList) {
             roomNameList.add(r.getRoomName());
 

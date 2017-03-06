@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by Gabrysia on 22.01.2017.
@@ -6,11 +7,11 @@ import java.util.ArrayList;
 public class Room {
 
     protected String roomName;
-    protected ArrayList<User> userList;
+    protected CopyOnWriteArrayList<User> userList;
 
     public Room (String roomName){
         this.roomName = roomName;
-        userList = new ArrayList<>();
+        userList = new CopyOnWriteArrayList<>();
     }
     public void pushUser(User user) throws NegativeArraySizeException{
         userList.add(user);
@@ -24,7 +25,7 @@ public class Room {
         return roomName;
     }
 
-    public ArrayList<User> getUserList() {
+    public CopyOnWriteArrayList<User> getUserList() {
         return userList;
     }
     public Room containsUser(User user){
